@@ -66,7 +66,7 @@ def log_it(connection, bas_id, filename, folder, state, subtype, counties, error
                                                                                    str(values['fldErrors']),
                                                                                    str(values['valueErrors']),
                                                                                    str(values['prj'])))
-            f.write('Shapefile:\n    ' + shp + '\n')  # prints path of file that was processed (print just the name?)
+            f.write('Shapefile:\n    {0}\n'.format(shp))  # prints path of file that was processed (print just the name?)
             f.write('Change Type:\n    ' + str(values['changetype']) + '\n')  # type of geography changed
             if values['fldErrors']:  # checks FOR required fields in shapefile
                 f.write('Expected field(s) missing:\n')
