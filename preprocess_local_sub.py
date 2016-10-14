@@ -1,14 +1,14 @@
 __author__ = 'Lauren Makely'
 
 # import all needed modules
-import notify
-import lisrds
-import bas
 import os
-import arcpy
 import shutil
 import datetime
 import sqlite3
+import arcpy
+
+import core
+import bas
 
 # set ArcGIS environments
 arcpy.env.outputMFlag = "Disabled"
@@ -35,17 +35,16 @@ try:  # fix this up later?
                  "GDBFC TEXT, FLDERRORS TEXT, VALUEERRORS TEXT, PRJ TEXT)")
 except:  # fix this up later?
     raise Exception
-    #pass
 
 
 def run_it(bas_id, supervised=True):
-    print '*'*34 + '\n*   Running BASID: ' + bas_id + '   *' + '\n'+'*'*34
+    print '*'*34 + '\n*   Running BASID: {id}   *'.format(bas_id) + '\n'+'*'*34
     state = bas_id[1:3]
     st_folder = os.path.join(bas_dir, state)
     if not os.path.exists(st_folder):
         os.mkdir(st_folder)
     folder = os.path.join(st_folder, bas_id)
-    zp = zipPath(bas_id)
+    zp = bas.zip_path(swim_dir, bas_id)
     filename = bas.which_zip(zp, bas_id)
     if not filename:
         print "No zip file encountered for " + bas_id
@@ -65,7 +64,7 @@ def run_it(bas_id, supervised=True):
         print 'Could not make project directory.'
         print e
     try:
-        extractZip(fullzipsrc, folder)
+        core.extract_zip(fullzipsrc, folder)
     except Exception, e:
         errors.append('Could not extract ZIP file.')
         bas.log_it(conn, bas_id, filename, folder, state, subType, counties, errors, datetime.datetime.now(), shp_dict)
@@ -173,10 +172,12 @@ def run_it(bas_id, supervised=True):
                             arcpy.Append_management(cf, fd + '\\' +outputFC, 'NO_TEST')
                     else:
                         arcpy.FeatureClassToFeatureClass_conversion(cf, fd, outputFC)
-        #counties = bas.get_counties(list(x+'\\'+y for x,y in changeFiles), BAS14countyMerge)
+
+        # counties = bas.get_counties(list(x+'\\'+y for x,y in changeFiles), BAS14countyMerge)
         counties = bas.get_counties(changeFiles, bas_yy_county_merge)
         bas.import_support(GDB, counties, folder, state)
-        lisrds(counties)
+        core.lisrds(counties)
+
         mxd = GDB.replace('.gdb', '.mxd')
         shutil.copy(mxd_template, mxd)
         mxd = arcpy.mapping.MapDocument(mxd)
@@ -203,7 +204,7 @@ def run_it(bas_id, supervised=True):
 
 
 if __name__ == "__main__":  # script is being executed on its own, outside of idle.
-    notify()
+    core.notify()
     inText = raw_input("Enter a BAS ID, or comma separated list of BAS IDs (with no spaces):\n")
     while 1:
         if inText:
@@ -212,10 +213,10 @@ if __name__ == "__main__":  # script is being executed on its own, outside of id
                 run_it(entity)
         else:
             break
-        notify()
+        core.notify()
         repeat = raw_input("Done with list. Do you want to run more (y,n)?: ")
         if repeat.lower() in ['y', 'yes', '1']:
-            notify()
+            core.notify()
             inText = raw_input("Enter a BAS ID, or comma separated list of BAS IDs (with no spaces):\n")
         else:
             break

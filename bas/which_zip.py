@@ -1,7 +1,8 @@
 __author__ = 'Lauren Makely'
 
 import os
-import notify
+
+from core import notify
 
 
 def which_zip(source_dir, bas_id):
