@@ -1,1 +1,7 @@
-__author__ = 'makel004'
+__author__ = ['Patrick Jurgens',
+              'Nick Moebius',
+              'Lauren Makely'
+              ]
+
+from core import *
+from bas import *

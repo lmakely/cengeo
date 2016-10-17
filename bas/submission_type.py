@@ -1,19 +1,26 @@
 __author__ = 'Lauren Makely'
 
-import os
 
-
-def submission_type(path):
+def submission_type(filenames):
     """
-    figure out MTPS vs digital
+    figure out MTPS vs GUPS vs digital
 
-    :param path:    path to processing folder for the specific bas id
-    :return:        string containing the type of submission
+    :param filenames:   list of tuples that consist of (dirname, filename). Checks the file names for
+                        file types that indicate a specific type of digital submission
+    :return:            string containing the type of submission
     """
-    for x, y, z in os.walk(path):
-        for f in z:
-            if f[-8:].upper() == 'FORM.DBF':
-                return 'MTPS'
-            elif f[-5:].upper() == '.GUPS':
-                return 'GUPS'
-    return 'DIGITAL'
+    subty = []
+    for path, name in filenames:
+        if name.upper().endswith('FORM.DBF'):
+            subty.append('MTPS')
+        elif name.upper().endswith('.GUPS'):
+            subty.append('GUPS')
+        else:
+            subty.append('DIGITAL')
+
+    if 'GUPS' in subty:
+        return 'GUPS'
+    elif 'MTPS' in subty:
+        return 'MTPS'
+    else:
+        return 'DIGITAL'

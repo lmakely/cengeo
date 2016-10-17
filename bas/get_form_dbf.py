@@ -3,23 +3,21 @@ __author__ = 'Lauren Makely'
 import os
 
 
-def get_form_dbf(path):
+def get_form_dbf(list_of_paths):
     """
     get form.dbf
 
     :param path:    path to bas id
     :return:        list of dbfs?
     """
-    for x, y, z in os.walk(path):
-        for f in z:
-            if f[-8:] == 'FORM.DBF':
-                return x + '\\' + f
+    for files in list_of_paths:
+        if files[1][-8:] == 'FORM.DBF':
+            return os.path.join(*files)
 
     results = []
-    for x, y, z in os.walk(path):
-        for f in z:
-            if 'form' in f.lower():
-                results.append(x+'\\'+f)
-    if len(results):
+    for files in list_of_paths:
+        if 'form' in files.lower():
+            results.append(os.path.join(*files))
+    if len(results) > 0:
         return results
     return None
