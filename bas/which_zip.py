@@ -1,17 +1,18 @@
 __author__ = 'Lauren Makely'
 
 import os
-
-from core import notify
+import core
 
 
 def which_zip(source_dir, bas_id):
     """
+    Identifies zip files to be unzipped and then processed. If it finds no zip files, prints an error.
+    If it finds multiple zip files that correspond with the bas_id it needs then it will ask for the user
+    to choose a zip file from a list of found files.
 
-
-    :param source_dir:  sad
-    :param bas_id:      dteoi
-    :return results:    list of zipfile(s). byt the end of the function, it is a single zipfile
+    :param source_dir:  directory where the zip file should be found
+    :param bas_id:      the id of the place being processed
+    :return results:    list of zipfile(s); by the end of the function, it is a single zipfile
     """
 
     # declare empty list for zip files
@@ -43,7 +44,7 @@ Type its number and press enter.
         question += '{index}: {zip}\n'.format(str(results.index(name)), name)
 
     while 1:
-        notify()  # notifies user there's a problem
+        core.notify()  # notifies user there's a problem
         x = raw_input(question)  # asks user which zip file to use by index number
 
         # do nothing for the files that are not the chosen index
@@ -53,7 +54,7 @@ Type its number and press enter.
         # index chosen and works
         elif x.isdigit() and int(x) < len(results):
             # this print statement is weird and needs to be cleaned up
-            print('*'*34 + '\n*   Running BASID: ' + bas_id + '   *' + '\n'+'*'*34)
+            print core.make_header('   Running BASID: {id}   '.format(bas_id), '*')
             # results is now a single zipfile to be passed on to another function
             return results[int(x)]
 

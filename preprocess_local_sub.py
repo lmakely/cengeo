@@ -38,7 +38,7 @@ except:  # fix this up later?
 
 
 def run_it(bas_id, supervised=True):
-    print '*'*34 + '\n*   Running BASID: {id}   *'.format(bas_id) + '\n'+'*'*34
+    print core.make_header('   Running BASID: {id}   '.format(bas_id), '*')
     state = bas_id[1:3]
     st_folder = os.path.join(bas_dir, state)
     if not os.path.exists(st_folder):
@@ -49,10 +49,10 @@ def run_it(bas_id, supervised=True):
     if not filename:
         print "No zip file encountered for " + bas_id
         return
-    fullzipsrc = zp + '\\' + filename
+    full_zip_source = zp + '\\' + filename
     errors = []
     shp_dict = {}
-    subType = None
+    sub_type = None
     counties = None
     if state == '13':
         georgia = True
@@ -64,28 +64,32 @@ def run_it(bas_id, supervised=True):
         print 'Could not make project directory.'
         print e
     try:
-        core.extract_zip(fullzipsrc, folder)
+        core.extract_zip(full_zip_source, folder)
     except Exception, e:
         errors.append('Could not extract ZIP file.')
-        bas.log_it(conn, bas_id, filename, folder, state, subType, counties, errors, datetime.datetime.now(), shp_dict)
+        bas.log_it(conn, bas_id, filename, folder, state, sub_type, counties, errors, datetime.datetime.now(), shp_dict)
     try:
-        subType = submissionType(folder)
+        sub_type = bas.submission_type(folder)
         shplist = getSHPs(folder)
         if not shplist:
             errors.append('No shapefiles found') #log_it
-            bas.log_it(conn, bas_id, filename, folder, state, subType, counties, errors, datetime.datetime.now(), shp_dict)
+            bas.log_it(conn, bas_id, filename, folder, state, sub_type, counties, errors, datetime.datetime.now(), shp_dict)
             return
         for path, fn in shplist:
-            shp_dict[path+'\\'+fn] = {'changetype':None, 'GDBFC':None, 'fldErrors':None, 'valueErrors':None, 'prj':None}
-        changeFiles = chngSHPs(shplist)
-        if not changeFiles:  #ask the user
-            changeFiles = cantFindChanges(shplist)
-        if not changeFiles:  #still no changes shapefile, time to give up.
+            shp_dict[path+'\\'+fn] = {'changetype': None,
+                                      'GDBFC': None,
+                                      'fldErrors': None,
+                                      'valueErrors': None,
+                                      'prj': None}
+        change_files = chngSHPs(shplist)
+        if not change_files:  #ask the user
+            change_files = cantFindChanges(shplist)
+        if not change_files:  #still no changes shapefile, time to give up.
             errors.append('No changes identified') #log_it
-            bas.log_it(conn, bas_id, filename, folder, state, subType, counties, errors, datetime.datetime.now(), shp_dict)
+            bas.log_it(conn, bas_id, filename, folder, state, sub_type, counties, errors, datetime.datetime.now(), shp_dict)
             return
 
-        for cf in changeFiles:
+        for cf in change_files:
             ct = chngType(cf)
             if ct[:7] in ['mismatc', 'nomatch']:
                 print ct
@@ -93,17 +97,17 @@ def run_it(bas_id, supervised=True):
                 if ct:
                     ct = ct
             shp_dict[cf]['changetype'] = ct
-        if subType == 'MTPS':
-            formid = getFormDBF(folder)
-            for cf in changeFiles:
+        if sub_type == 'MTPS':
+            form_id = bas.get_form_dbf(folder)
+            for cf in change_files:
                 if shp_dict[cf]['changetype'] in ['incplace', 'cousub', 'concity', 'aiannh']:
-                    formIDupdate(formid, cf)
+                    formIDupdate(form_id, cf)
 
         arcpy.CreateFileGDB_management(folder, "DB"+bas_id)
-        GDB = folder + '\\' + "DB" + bas_id + '.gdb'
+        gdb = folder + '\\' + "DB" + bas_id + '.gdb'
         if state == '02':  # Alaska
             arcpy.CreateFeatureDataset_management(
-                GDB,
+                gdb,
                 "submission",
                 "PROJCS['NAD_1983_Alaska_Albers', GEOGCS['GCS_North_American_1983',"
                 "DATUM['D_North_American_1983', SPHEROID['GRS_1980',6378137.0,298.257222101]],"
@@ -115,7 +119,7 @@ def run_it(bas_id, supervised=True):
                 "-13752200 -8948200 10000;-100000 10000;-100000 10000;0.001;0.001;0.001;IsHighPrecision")
         elif state == '15':  # Hawaii
             arcpy.CreateFeatureDataset_management(
-                GDB,
+                gdb,
                 "submission",
                 "PROJCS['Hawaii_Albers_Equal_Area_Conic', GEOGCS['GCS_North_American_1983',"
                 "DATUM['D_North_American_1983', SPHEROID['GRS_1980',6378137.0,298.257222101]],"
@@ -126,7 +130,7 @@ def run_it(bas_id, supervised=True):
                 "UNIT['Meter',1.0]];-22487400 -7108900 10000;-100000 10000;-100000 10000;0.001;0.001;0.001;IsHighPrecision")
         else:    # contiguous USA 48
             arcpy.CreateFeatureDataset_management(
-                GDB,
+                gdb,
                 "submission",
                 "PROJCS['USA_Contiguous_Albers_Equal_Area_Conic_USGS_version',"
                 "GEOGCS['GCS_North_American_1983', DATUM['D_North_American_1983',"
@@ -136,8 +140,8 @@ def run_it(bas_id, supervised=True):
                 "PARAMETER['Central_Meridian',-96.0], PARAMETER['Standard_Parallel_1',29.5],"
                 "PARAMETER['Standard_Parallel_2',45.5], PARAMETER['Latitude_Of_Origin',23.0],"
                 "UNIT['Meter',1.0]];-16901100 -6972200 10000;-100000 10000;-100000 10000;0.001;0.001;0.001;IsHighPrecision")
-        fd = GDB + '\\submission'
-        for cf in changeFiles:
+        fd = gdb + '\\submission'
+        for cf in change_files:
             ct = shp_dict[cf]['changetype']
             if ct in bas.dicts.change_types.keys():
                 shp_dict[cf]['fldErrors'] = fldErrors = fldChk(cf, ct)
@@ -174,19 +178,19 @@ def run_it(bas_id, supervised=True):
                         arcpy.FeatureClassToFeatureClass_conversion(cf, fd, outputFC)
 
         # counties = bas.get_counties(list(x+'\\'+y for x,y in changeFiles), BAS14countyMerge)
-        counties = bas.get_counties(changeFiles, bas_yy_county_merge)
-        bas.import_support(GDB, counties, folder, state)
+        counties = bas.get_counties(change_files, bas_yy_county_merge)
+        bas.import_support(gdb, counties, folder, state)
         core.lisrds(counties)
 
-        mxd = GDB.replace('.gdb', '.mxd')
+        mxd = gdb.replace('.gdb', '.mxd')
         shutil.copy(mxd_template, mxd)
         mxd = arcpy.mapping.MapDocument(mxd)
         layers = arcpy.mapping.ListLayers(mxd)
         for layer in layers:
             new_fc = layer.datasetName.replace('template', bas_id)
-            new_path = os.path.join(GDB, new_fc)
+            new_path = os.path.join(gdb, new_fc)
             if layer.isFeatureLayer and arcpy.Exists(new_path):
-                layer.replaceDataSource(GDB, "FILEGDB_WORKSPACE", new_fc)
+                layer.replaceDataSource(gdb, "FILEGDB_WORKSPACE", new_fc)
             layer.name = layer.name.replace('template', bas_id)
         df = arcpy.mapping.ListDataFrames(mxd)[0]
         layers = arcpy.mapping.ListLayers(mxd)
@@ -197,10 +201,10 @@ def run_it(bas_id, supervised=True):
         df.extent = county_lyr.getExtent()
         mxd.save()
         del mxd, df
-        bas.log_it(conn, bas_id, filename, folder, state, subType, counties, errors, datetime.datetime.now(), shp_dict)
+        bas.log_it(conn, bas_id, filename, folder, state, sub_type, counties, errors, datetime.datetime.now(), shp_dict)
     except Exception, e:
         errors.append(e)
-        bas.log_it(conn, bas_id, filename, folder, state, subType, counties, errors, datetime.datetime.now(), shp_dict)
+        bas.log_it(conn, bas_id, filename, folder, state, sub_type, counties, errors, datetime.datetime.now(), shp_dict)
 
 
 if __name__ == "__main__":  # script is being executed on its own, outside of idle.
