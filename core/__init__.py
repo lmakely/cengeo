@@ -3,9 +3,9 @@ __author__ = ['Patrick Jurgens',
               'Lauren Makely'
               ]
 
+from check_for_prj import *
 from desc_shp import *
 from extract_zip import *
-from get_shps import *
 from header import *
 from lisrds import *
 from notify import *
