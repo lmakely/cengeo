@@ -12,18 +12,18 @@ def cannot_id_changes(shp_tuples):
                         Consists of (dirname, filenames)
     :return:            no idea yet but I think it's a list of changes identified by user input
     """
-    no_changes_list = list(x + '\\' + y for x, y in shp_tuples)
+    no_changes_list = [os.path.join(path, name) for path, name in shp_tuples]
     print no_changes_list
 
     question = """=========================================================================
-The following shapefiles could not be identified.
-Which, if any, are changes files?
-Input a list of the numbers for each shapefile that is a changes file,
-do not enter anything if you are unsure.
-To see a list of Attribute fields for a given shapefile
-enter 'desc #' where the number corresponds to the shapefile of interest.
-=========================================================================
-"""
+                The following shapefiles could not be identified.
+                Which, if any, are changes files?
+                Input a list of the numbers for each shapefile that is a changes file,
+                do not enter anything if you are unsure.
+                To see a list of Attribute fields for a given shapefile
+                enter 'desc #' where the number corresponds to the shapefile of interest.
+                =========================================================================
+                """
     for name in no_changes_list:
         index = no_changes_list.index(name)
         question += '{0}: {1}\n'.format(index, name)
@@ -66,7 +66,7 @@ enter 'desc #' where the number corresponds to the shapefile of interest.
             return out_list
 
 if __name__ == "__main__":
-    wrksp =
+    wrksp = r'C:\some_dir'
     files = []
     for x, y, z in os.walk(wrksp):
         files.append((x, z))
