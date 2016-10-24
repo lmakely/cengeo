@@ -5,6 +5,11 @@ import os
 
 def log_it(connection, bas_id, filename, folder, state, subtype, counties, errors, timestamp, shp_dict):
     """
+    This probably should get broken down into a log function and a BAS specific format function. That way the log
+    function can be used for all projects and not just BAS. Could even break it down into multiple checks that get
+    called in a BAS specific log so those can be used for other projects? Or instead of saving all these args in other
+    functions, have the log file open then and append those errors to it? - LMM
+
     Creates a log file for processor to review.
     File is saved as a .txt within the working directory.
 
