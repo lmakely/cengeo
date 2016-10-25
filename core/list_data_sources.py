@@ -5,6 +5,9 @@ import arcpy
 
 def list_data_sources(path_to_mxd):
     """
+    Use this function to see if the file paths used in an mxd are:
+        1) from the correct source
+        2) broken or not
 
     :param path_to_mxd: path to an mxd that you want to inspect
     :return:
