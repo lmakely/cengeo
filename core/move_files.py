@@ -9,7 +9,7 @@ def move_file(input_shp, output_folder, extension):
     Takes in a folder and identifies all the files in that folder of that extension. Then it moves the files
     (and any related files) to the new folder. Works best with shapefiles.
 
-    :param input_shp:       file to be moved
+    :param input_shp:       file to be moved (need to test this with wildcard values)
     :param output_folder:   folder file should be moved to
     :return:
     """

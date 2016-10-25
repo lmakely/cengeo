@@ -1,28 +1,20 @@
 __author__ = 'Lauren Makely'
 
-import os
 import core
 
 
-def which_zip(source_dir, bas_id):
+def which_zip(source_dir, *search_id):
     """
     Identifies zip files to be unzipped and then processed. If it finds no zip files, prints an error.
-    If it finds multiple zip files that correspond with the bas_id it needs then it will ask for the user
+    If it finds multiple zip files that correspond with the search_id it needs then it will ask for the user
     to choose a zip file from a list of found files.
 
     :param source_dir:  directory where the zip file should be found
-    :param bas_id:      the id of the place being processed
+    :param search_id:   the id of the place being processed. if left blank, will return the whole directory of zip files
     :return results:    list of zipfile(s); by the end of the function, it is a single zipfile
     """
 
-    # declare empty list for zip files
-    results = []
-
-    # loop through the directory to fill results
-    for f in os.listdir(source_dir):
-        # if the extension for a file is '.zip' it gets added to  results
-        if f[-4:].lower() == '.zip':
-            results.append(f)
+    results = core.find_files(source_dir, '.zip')
 
     # checking to see if the list is empty or not
     if len(results) == 0:  # there is no ZIP file here
@@ -33,11 +25,11 @@ def which_zip(source_dir, bas_id):
 
     # th following gets printed later if there are multiple items in the results?
     question = """=========================================================================
-More than one ZIP file was found for %s.
-Please select one from the list below.
-Type its number and press enter.
-=========================================================================
-""" % bas_id
+                More than one ZIP file was found for %s.
+                Please select one from the list below.
+                Type its number and press enter.
+                =========================================================================
+                """ % search_id
 
     # appends the list of multiple zips to the end of the question?
     for name in results:
@@ -54,7 +46,7 @@ Type its number and press enter.
         # index chosen and works
         elif x.isdigit() and int(x) < len(results):
             # this print statement is weird and needs to be cleaned up
-            print core.make_header('   Running BASID: {id}   '.format(bas_id), '*')
+            print core.make_header('   Running BASID: {id}   '.format(search_id), '*')
             # results is now a single zipfile to be passed on to another function
             return results[int(x)]
 
