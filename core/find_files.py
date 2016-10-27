@@ -4,7 +4,7 @@ import os
 
 
 # function that searches through the directory to generate results
-def find_files(search_folder, search_string):
+def find_files(search_folder, *search_string):
     """
     Generates a list of files that matches the search criteria.
 
@@ -14,5 +14,6 @@ def find_files(search_folder, search_string):
     """
     for f in os.listdir(search_folder):
         # if the extension for a file is '.zip' it gets produced
-        if f.endswith(search_string):
-            yield f
+        for ext in search_string:
+            if f.endswith(ext):
+                yield f

@@ -2,7 +2,7 @@ __author__ = 'Maddie Sovich'
 __author__ = 'Lauren Makely'
 
 
-from county_add_fields import *
-from create_populate_gdb import *
-from move_files import *
-from split_discrepancies import *
+from NPC_county_add_fields import *
+from NPC_create_populate_gdb import *
+from NPC_LMM_move_files import *
+from MS_split_discrepancies import *

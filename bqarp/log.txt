@@ -1,0 +1,28 @@
+***************************
+*   Processing state 20   *
+***************************
+Unzipping the following to H:\!!!HDriveStuff\BQARP\20\SWIM_FILES:
+
+	\\batch4.ditd.census.gov\mtdata003_geo_SWIM\BQARP\2016\20\KS_20160926.gdb_34338_1474920868.zip
+
+Adding files to mxd:
+
+AddressPoints_NG911_GCS
+RoadCenterline_NG911_GCS
+KS_201606_Address_Status.shp
+KS_201606_Road_Status.shp
+KS_201608_Address_Status.shp
+KS_201608_Road_Status.shp
+Failed to add KS_AddressPoints.shp to mxd
+KS_Cities_20160628.shp
+KS_Cities_20160829.shp
+KS_Counties_20160628.shp
+KS_Counties_20160829.shp
+KS_RoadCenterline.shp
+KS_Parcels_20160629
+KS_Parcels_20160829
+KS_RoadCenterline
+KS_AddressPoints
+KS_MunicipalBoundaries
+KS_CountyBoundaries
+Saving mxd to H:\!!!HDriveStuff\BQARP\20\BQARP_Assessment.mxd
