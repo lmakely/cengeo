@@ -80,7 +80,7 @@ def create_and_setup_mxd(template_mxd, where_to_save_mxd, directory_of_features)
                 logger.info(fc)
                 arcpy.mapping.AddLayer(df, add_layer, "AUTO_ARRANGE")
             except:
-                logger.info('Failed to add {} to mxd'.format(fc))
+                logger.info('Failed to add {0} to mxd'.format(fc))
                 continue
 
         mxd_layers = arcpy.mapping.ListLayers(mxd)

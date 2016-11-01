@@ -10,6 +10,7 @@ from desc_shp import *
 from extract_zip import *
 from find_files import *
 from make_header import *
+from merge_files import *
 from lisrds import *
 from list_data_sources import *
 from move_files import *
