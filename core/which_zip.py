@@ -33,11 +33,11 @@ def which_zip(source_dir, *search_id):
 
     if len(results) > 0:  # there is more than one zipfile
         # the following gets printed later if there are multiple items in the results?
-        question = """=========================================================================
+        question = """=================================================================================
 More than one ZIP file was found for this state.
 Please select from the list below.
 Type its number or enter a list of numbers separated by spaces and press enter.
-=========================================================================
+=================================================================================
 """
 
         # appends the list of multiple zips to the end of the question?
@@ -46,7 +46,7 @@ Type its number or enter a list of numbers separated by spaces and press enter.
 
         while 1:
             core.notify()  # notifies user there's a problem
-            x_list = [int(x) for x in raw_input(question).split()]  # asks user which zip file to use by index number
+            x_list = list(int(x) for x in raw_input(question).split())  # asks user which zip file to use by index number
 
             # do nothing for the files that are not the chosen index
             if not x_list:

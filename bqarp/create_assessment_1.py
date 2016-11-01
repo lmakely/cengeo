@@ -10,20 +10,19 @@ working_dir = r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP'
 template_mxd = r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP\Assessment.mxd'
 
 
-# def bqarp_preprocess(zip_file):
 # figure out where the heck this file is going. build regex (eventually) to identify the STCOU in a file name (or not)
 # for now, this just gets the ST code to put a temp folder in so the user can move them later or whatever
 # this will also be a permanent directory on the P drive eventually
-state_code = str(input("Which state is being processed? Please enter a two digit state code: "))
-swim = os.path.join(swim, state_code)
-state_dir = os.path.join(working_dir, state_code)
+st_id = str(input("Which state is being processed? Please enter a two digit state code: "))
+swim = os.path.join(swim, st_id)
+state_dir = os.path.join(working_dir, st_id)
 
 logging.basicConfig(filename=os.path.join(state_dir, 'log.txt'), level=logging.DEBUG, format='%(message)s', filemode='w')
 logger = logging.getLogger()
-logger.info(core.make_header('  Processing state {}  '.format(state_code)))
+logger.info(core.make_header('  Processing state {}  '.format(st_id)))
 
 # a couple more directories get formed here
-unzipped_dir = os.path.join(state_dir, 'SWIM_FILES')
+unzipped_dir = os.path.join(state_dir, 'LOCAL_FILES')
 
 # run: which_zip on a swim/swecs folder (stores a list of values)
 current_zips = list(core.which_zip(swim))
