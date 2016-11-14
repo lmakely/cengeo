@@ -8,7 +8,7 @@ import winsound
 
 swim = r'\\batch4.ditd.census.gov\mtdata003_geo_SWIM\BQARP\2016'  # this will need to get changed from year to year
 lisrds = r''
-working_dir = r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP'
+working_dir = r'H:\!!!HDriveStuff\BQARP'  # r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP'
 template_mxd = r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP\Tools\Assessment.mxd'
 
 
@@ -98,7 +98,7 @@ def create_and_setup_mxd(template_mxd, where_to_save_mxd, directory_of_features)
                     continue
 
     output_mxd = os.path.join(where_to_save_mxd, 'BQARP_Assessment.mxd')
-    logger.info('\nSaving mxd to {}'.format(output_mxd))
+    logger.info('\n\nSaving mxd to {}'.format(output_mxd))
     mxd.saveACopy(output_mxd)
 
 
@@ -187,7 +187,7 @@ logger = logging.getLogger()
 logger.info(make_header('  Processing state {}  '.format(state_code)))
 
 # a couple more directories get formed here
-unzipped_dir = os.path.join(state_dir, 'SWIM_FILES')
+unzipped_dir = os.path.join(state_dir, 'LOCAL_FILES')
 
 # run: which_zip on a swim/swecs folder (stores a list of values)
 current_zips = list(which_zip(swim))
@@ -196,14 +196,14 @@ logger.info('Unzipping the following to {0}:'.format(unzipped_dir))
 # run: extract_zip on chosen zip files. This might take a while.
 for zips in current_zips:
     logger.info('\n\t{0}'.format(zips))
+    logger.info('\n\n')
     extract_zip(zips, unzipped_dir)
 
 # function?: pull lisrds data like bas does (not currently possible so order it)
 # function: move LISRDS data to workspace or just access it
 
 
-# func: add all data to mxd?
-logger.info('\n')
+# func: add all data to mxd
 print('Adding files to mxd...')
 logger.info(make_header('Adding files to mxd'))
 create_and_setup_mxd(template_mxd, state_dir, unzipped_dir)

@@ -6,8 +6,8 @@ import logging
 
 swim = r'\\batch4.ditd.census.gov\mtdata003_geo_SWIM\BQARP\2016'
 lisrds = r''
-working_dir = r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP'
-template_mxd = r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP\Assessment.mxd'
+working_dir = r'H:\!!!HDriveStuff\BQARP'
+template_mxd = r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP\Tools\Assessment.mxd'
 
 
 # figure out where the heck this file is going. build regex (eventually) to identify the STCOU in a file name (or not)
@@ -40,5 +40,4 @@ for zips in current_zips:
 # func: add all data to mxd?
 print('Adding files to mxd...')
 logger.info(core.make_header('Adding files to mxd'))
-logger.info('\n')
 core.create_and_setup_mxd(template_mxd, state_dir, unzipped_dir)

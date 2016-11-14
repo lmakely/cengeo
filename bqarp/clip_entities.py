@@ -4,6 +4,13 @@ import arcpy
 import os
 import logging
 
+"""
+THIS IS A TOOL FOR ARCMAP AND WILL NOT WORK ON ITS OWN IN PYTHON WITHOUT MODIFICATION
+
+This tool will use census data to clip local data to each county in a state. It can be used on feature classes or
+shapefiles. While its primary use is to divide up data for BQARP, it can be altered to fit tasks for other programs.
+"""
+
 
 def make_header(my_string, char='*'):
     """
@@ -54,7 +61,9 @@ def clip_county_by_selection(joined_county_file, local_file, output_folder, type
 
     :param joined_county_file:  lisrds county file
     :param local_file:          local boundary files to be split
-    :param: output_folder:      base folder to put outputs. will create new folders for each split place.
+    :param output_folder:       base folder to put outputs. will create new folders for each split place.
+    :param type_submission:     this is used to format the name of the output shapefile. In the arctool it will be
+                                a drop down list to make things standardized.
     """
 
     arcpy.env.workspace = output_folder  # the state BQARP folder
@@ -70,7 +79,6 @@ def clip_county_by_selection(joined_county_file, local_file, output_folder, type
             # create the full county code and sql statement
             county_fp = '{0}{1}'.format(row[0], row[1])
             expression = """"COUNTYFP" = '{0}'""".format(row[1])
-            print expression
             # select each county from the joined counties and set outputs folder
             arcpy.SelectLayerByAttribute_management('joined_counties_lyr',
                                                     "NEW_SELECTION",
@@ -84,11 +92,11 @@ def clip_county_by_selection(joined_county_file, local_file, output_folder, type
                                                    "NEW_SELECTION",
                                                    "NOT_INVERT")
 
-            select_length = arcpy.GetCount_management('local_places_lyr')
+            select_length = int(arcpy.GetCount_management('local_places_lyr').getOutput(0))
             logging.info('{0}: {1}'.format(county_fp, select_length))
 
             if select_length > 0:
-                clip_name = '{0}_{1}.shp'.format(type_submission, county_fp)
+                clip_name = 'npc_bqarp_2016_{0}_{1}.shp'.format(county_fp, type_submission)
                 output_path = os.path.join(output_folder, county_fp)
 
                 # make the output folder if it's not already there
@@ -99,23 +107,19 @@ def clip_county_by_selection(joined_county_file, local_file, output_folder, type
                                                             output_path,
                                                             clip_name)
                 arcpy.AddMessage('Completed clipping: {0}'.format(county_fp))
-            else:
+            elif select_length == 0:
                 arcpy.AddMessage('{0} contains no features'.format(county_fp))
+            else:
+                arcpy.AddMessage('{0} is malfunctioning'.format(county_fp))
 
     logging.info('Completed splitting places')
 
 if __name__ == "__main__":
-    # counties = arcpy.GetParameterAsText(0)  # use their county data to clip their places
-    # places = arcpy.GetParameterAsText(1)
-    # output = arcpy.GetParameterAsText(2)  # file path to state folder where county folder should get made
-    # census_file = arcpy.GetParameterAsText(3)
-    # subtype = arcpy.GetParameterAsText(4)
-
-    counties = r'H:\!!!HDriveStuff\BQARP\20\local_data\KS_Counties_20160829.shp'  # use their county data to clip their places
-    places = r'H:\!!!HDriveStuff\BQARP\20\local_data\places\local_places_merge_20.shp'
-    output = r'H:\!!!HDriveStuff\BQARP\20'
-    census_file = r'H:\!!!HDriveStuff\BQARP\20\local_data\bqarp_2016_20_county_v90.shp'
-    subtype = 'local_places'
+    counties = arcpy.GetParameterAsText(0)  # use their county data to clip their places, our data on our places
+    places = arcpy.GetParameterAsText(1)
+    output = arcpy.GetParameterAsText(2)  # file path to state folder where county folder should get made
+    census_file = arcpy.GetParameterAsText(3)
+    subtype = arcpy.GetParameterAsText(4)
 
     logging.basicConfig(filename=os.path.join(output, 'log.txt'), level=logging.DEBUG, format='%(message)s')
     logger = logging.getLogger()
@@ -129,6 +133,7 @@ if __name__ == "__main__":
     if not os.path.exists(projected_counties):
         os.mkdir(projected_counties)
 
+    # this should probs be a function
     targetDescribe = arcpy.Describe(census_file)
     targetSR = targetDescribe.SpatialReference
 
@@ -156,9 +161,17 @@ if __name__ == "__main__":
     clip_county_by_selection(clip_to_these, places, output, subtype)
 
     arcpy.AddMessage('Deleting intermediate files....')
-    remove_files = find_files(projected_counties)
-    for rf in remove_files:
-        os.remove(os.path.join(projected_counties, rf))
+    try:
+        remove_files = find_files(projected_counties)
+        for rf in remove_files:
+            if rf.endswith('.shp'):
+                arcpy.Delete_management(os.path.join(projected_counties, rf))
+    finally:
+        remove_again = find_files(projected_counties)
+        for ra in remove_again:
+            print ra
+            os.remove(os.path.join(projected_counties, ra))
+
     os.rmdir(projected_counties)
 
     arcpy.AddMessage('Clipping complete')
