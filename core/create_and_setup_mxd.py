@@ -36,19 +36,19 @@ def create_and_setup_mxd(template_mxd, where_to_save_mxd, directory_of_features)
                 logger.info('Failed to add {} to mxd'.format(fc))
                 continue
 
-        mxd_layers = arcpy.mapping.ListLayers(mxd)
+    mxd_layers = arcpy.mapping.ListLayers(mxd)
 
-        for shp in add_these_shps:
-            if shp in mxd_layers:
-                pass
-            else:
-                try:
-                    add_layer = arcpy.mapping.Layer(os.path.join(directory_of_features, shp))
-                    logger.info(shp)
-                    arcpy.mapping.AddLayer(df, add_layer, "AUTO_ARRANGE")
-                except:
-                    logger.info('Failed to add {} to mxd'.format(shp))
-                    continue
+    for shp in add_these_shps:
+        if shp in mxd_layers:
+            pass
+        else:
+            try:
+                add_layer = arcpy.mapping.Layer(os.path.join(directory_of_features, shp))
+                logger.info(shp)
+                arcpy.mapping.AddLayer(df, add_layer, "AUTO_ARRANGE")
+            except:
+                logger.info('Failed to add {} to mxd'.format(shp))
+                continue
 
     output_mxd = os.path.join(where_to_save_mxd, 'BQARP_Assessment.mxd')
     logger.info('Saving mxd to {}'.format(output_mxd))

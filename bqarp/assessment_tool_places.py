@@ -62,6 +62,8 @@ local_fips_field = arcpy.GetParameterAsText(3)  # the FIPs code field in the loc
 st = arcpy.GetParameterAsText(4)  # the state code, cause its easier to just ask for it here
 census_places_shp = arcpy.GetParameterAsText(5)  # LISRDS file for corresponding census places
 
+discrepancy_file_multipart = "in_memory\\places_select_MultipartToSin"
+discrepancy_file_select = "in_memory\\places_select_area"
 
 logging.basicConfig(filename=os.path.join(put_them_here, 'assessment_log.txt'), level=logging.DEBUG, format='%(message)s', filemode='w')
 logger = logging.getLogger()
@@ -124,7 +126,7 @@ name_fields = ['{0}'.format(local_name_field), 'NAME', 'NAME_MATCH']
 # Process: Make Feature Layer
 arcpy.MakeFeatureLayer_management(local_census_join_shp, 'local_census_lyr')
 
-if local_fips_field:
+if local_fips_field != "":
     fips_mismatch = 0
     with arcpy.da.UpdateCursor('local_census_lyr', fips_fields) as cursor:
         for row in cursor:
@@ -136,7 +138,7 @@ if local_fips_field:
             cursor.updateRow(row)
     logging.warning('{0} FIPS records did not match'.format(fips_mismatch))
 
-if local_name_field:
+if local_name_field != "":
     name_mismatch = 0
     with arcpy.da.UpdateCursor('local_census_lyr', name_fields) as cursor:
         for row in cursor:
@@ -150,22 +152,16 @@ if local_name_field:
 
 
 logging.info('Union output file located at {0}'.format(local_census_join_shp))
-arcpy.AddMessage('Assessment complete! Proceeding with discrepancy analysis.')
+arcpy.AddMessage('Adding processing attribute fields...')
 
-# Script arguments
 discrepancy_file = os.path.join(merged_places_folder, 'npc_bqarp_2016_{0}_places_discrepancies.shp'.format(st))
-
-# Local variables:
-discrepancy_file_multipart = "in_memory\\places_select_MultipartToSin"
-discrepancy_file_area = "in_memory\\places_select_area"
-Delete_succeeded = "false"
 arcpy.SymDiff_analysis(merged_places, census_places_shp, discrepancy_file_multipart)
-arcpy.MultipartToSinglepart_management(discrepancy_file_multipart, discrepancy_file_area)
+arcpy.MultipartToSinglepart_management(discrepancy_file_multipart, discrepancy_file_select)
 
 # Process: Calculate Areas
-arcpy.CalculateAreas_stats(discrepancy_file_area, discrepancy_file)
+arcpy.CalculateAreas_stats(discrepancy_file_select, discrepancy_file)
 
-# Process: Delete
+# creating QC fields
 arcpy.AddField_management(discrepancy_file, "FEEDBACK", "TEXT", "", "", "3", "", "NULLABLE", "NON_REQUIRED", "")
 arcpy.AddField_management(discrepancy_file, "COMMENTS", "TEXT", "", "", "100", "", "NULLABLE", "NON_REQUIRED", "")
 arcpy.AddField_management(discrepancy_file, "RELATE", "TEXT", "", "", "5", "", "NULLABLE", "NON_REQUIRED", "")
@@ -178,4 +174,5 @@ arcpy.AddField_management(discrepancy_file, "D_COMMENTS", "TEXT", "", "", "100",
 arcpy.AddField_management(discrepancy_file, "DIG_QA", "TEXT", "", "", "1", "", "NULLABLE", "NON_REQUIRED", "")
 arcpy.AddField_management(discrepancy_file, "Q_COMMENTS", "TEXT", "", "", "100", "", "NULLABLE", "NON_REQUIRED", "")
 arcpy.DeleteField_management(discrepancy_file, "NAME_1")
+arcpy.AddMessage('Assessment complete!')
 logging.info('Discrepancy output file located at {0}'.format(discrepancy_file))

@@ -107,10 +107,19 @@ def clip_county_by_selection(joined_county_file, local_file, output_folder, type
                                                             output_path,
                                                             clip_name)
                 arcpy.AddMessage('Completed clipping: {0}'.format(county_fp))
+
             elif select_length == 0:
                 arcpy.AddMessage('{0} contains no features'.format(county_fp))
+
             else:
                 arcpy.AddMessage('{0} is malfunctioning'.format(county_fp))
+
+            if type_submission == 'local_county' or type_submission == 'local_places':
+                head, geography = type_submission.split('_')
+                txt = os.path.join(output_path, '{0}_{1}.txt'.format(county_fp, geography))
+                if not os.path.exists(txt):
+                    txt_file = open(txt)
+                    txt_file.close()
 
     logging.info('Completed splitting places')
 

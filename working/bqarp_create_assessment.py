@@ -183,6 +183,8 @@ if __name__ == "__main__":
         state_code = str(input("Which state is being processed? Please enter a two digit state code: "))
         swim = os.path.join(swim, state_code)
         state_dir = os.path.join(working_dir, state_code)
+        if not state_dir:
+            os.mkdir(state_dir)
 
         logging.basicConfig(filename=os.path.join(state_dir, 'log.txt'), level=logging.DEBUG, format='%(message)s', filemode='w')
         logger = logging.getLogger()
@@ -214,6 +216,7 @@ if __name__ == "__main__":
         print sys.exc_info()[0]
         import traceback
         print traceback.format_exc()
+
     finally:
         print "Press Enter to continue ..."
         raw_input()
