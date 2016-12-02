@@ -16,5 +16,5 @@ from list_data_sources import *
 from move_files import *
 from notify import *
 from replace_workspace import *
-from stcou import *
+from stcou_codes import *
 from which_zip import *

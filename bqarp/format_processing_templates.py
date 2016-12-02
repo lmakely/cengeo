@@ -31,124 +31,38 @@ def make_header(my_string, char='*'):
 
 def format_processing_mxd(current_mxd_path, new_gdb):
     """
-    This function will take in an mxd with broken links or different links and attempt to replace the data sources. If
-    the name of a layer is different in the new data source, it will not fix the path to it. If the sources were
-    broken in the mxd and there are any data sets that are not successfully pathed to the new gdb, it will print a list
-    of the data sets that are still broken. For a function that will print all data sources see core/list_data_sources.
+    This function replaces the workspace for an mxd with a new gdb. Then it saves the mxd as a new map document.
 
-    :param current_mxd_path:    Path to the mxd with broken links
-    :param current_gdb:         Path to the GDB that was used to create the mxd
+    :param current_mxd_path:    Path to the GDB that was used to create the mxd
     :param new_gdb:             GDB where the data resides now
-    :param new_mxd_path:        Path where you want to save your new mxd. It will be saved as a copy so the name can
-                                be different than the original mxd.
     :return:
     """
 
     mxd = arcpy.mapping.MapDocument(current_mxd_path)
+    df = arcpy.mapping.ListDataFrames(mxd)[0]
     arcpy.env.overwriteOutput = True
     arcpy.env.workspace = new_gdb
 
     head, tail = os.path.split(new_gdb)
     proj, stcou = tail[:-4].split('_')
+    logging.basicConfig(filename=os.path.join(head, 'create_template_log.txt'), level=logging.DEBUG, format='%(message)s')
     logging.info(make_header('Creating processing mxd for {0}'.format(stcou)))
 
     for lyr in arcpy.mapping.ListLayers(mxd):
         if lyr.isFeatureLayer:
-            print(lyr.name)
-            if lyr.name.endswith('msp'):
-                data_set = 'npc_bqarp_2016_{0}_msp_addr_t13'.format(stcou)
-                if arcpy.Exists(os.path.join(arcpy.env.workspace, data_set)):
-                    print(os.path.join(arcpy.env.workspace, data_set))
-                    lyr.replaceDataSource(new_gdb,
-                                          "FILEGDB_WORKSPACE",
-                                          data_set)
+            fc = lyr.datasetName
+            arcpy.AddMessage("Replacing workspace: {0}".format(fc))
+            new_path = os.path.join(new_gdb, fc)
+            if arcpy.Exists(new_path):
+                lyr.replaceDataSource(new_gdb, "FILEGDB_WORKSPACE", fc)
 
-            elif lyr.name.endswith('edges'):
-                data_set = 'npc_bqarp_2016_{0}_edge_vw'.format(stcou)
-                print(os.path.join(arcpy.env.workspace, data_set))
-                if arcpy.Exists(data_set):
-                    lyr.replaceDataSource(arcpy.env.workspace,
-                                          "FILEGDB_WORKSPACE",
-                                          data_set)
+                if lyr.name.endswith('county'):
+                    df.extent = lyr.getExtent()
 
-            elif lyr.name.endswith('offset'):
-                data_set = 'npc_bqarp_2016_{0}_offset'.format(stcou)
-                print(os.path.join(arcpy.env.workspace, data_set))
-                if arcpy.Exists(data_set):
-                    lyr.replaceDataSource(arcpy.env.workspace,
-                                          'FILEGDB_WORKSPACE',
-                                          data_set)
-
-            elif lyr.name.endswith('parcels'):
-                data_set = 'npc_bqarp_2016_{0}_parcel_data'.format(stcou)
-                print(os.path.join(arcpy.env.workspace, data_set))
-                if arcpy.Exists(data_set):
-                    lyr.replaceDataSource(arcpy.env.workspace,
-                                          'FILEGDB_WORKSPACE',
-                                          data_set)
-
-            elif lyr.name.endswith('cousub'):
-                data_set = 'npc_bqarp_2016_{0}_cousub_v90'.format(stcou)
-                print(os.path.join(arcpy.env.workspace, data_set))
-                if arcpy.Exists(data_set):
-                    lyr.replaceDataSource(arcpy.env.workspace,
-                                          'FILEGDB_WORKSPACE',
-                                          data_set)
-
-            elif lyr.name.endswith('county'):
-                data_set = 'npc_bqarp_2016_{0}_county_v90'.format(stcou)
-                if arcpy.Exists(data_set):
-                    lyr.replaceDataSource(arcpy.env.workspace,
-                                          'FILEGDB_WORKSPACE',
-                                          data_set)
-
-            elif lyr.name.endswith('areawater'):
-                data_set = 'npc_bqarp_2016_{0}_areawater'.format(stcou)
-                print(os.path.join(arcpy.env.workspace, data_set))
-                if arcpy.Exists(data_set):
-                    lyr.replaceDataSource(arcpy.env.workspace,
-                                          'FILEGDB_WORKSPACE',
-                                          data_set)
-
-            elif lyr.name.endswith('places_union'):
-                data_set = 'npc_bqarp_2016_{0}_places_union'.format(stcou)
-                print(os.path.join(arcpy.env.workspace, data_set))
-                if arcpy.Exists(data_set):
-                    lyr.replaceDataSource(arcpy.env.workspace,
-                                          'FILEGDB_WORKSPACE',
-                                          data_set)
-
-            elif lyr.name.endswith('counties_union'):
-                data_set = 'npc_bqarp_2016_{0}_counties_union'.format(stcou)
-                print(os.path.join(arcpy.env.workspace, data_set))
-                if arcpy.Exists(data_set):
-                    lyr.replaceDataSource(arcpy.env.workspace,
-                                          'FILEGDB_WORKSPACE',
-                                          data_set)
-
-            elif lyr.name.endswith('census_places'):
-                data_set = 'npc_bqarp_2016_{0}_census_places'.format(stcou)
-                print(os.path.join(arcpy.env.workspace, data_set))
-                if arcpy.Exists(data_set):
-                    lyr.replaceDataSource(arcpy.env.workspace,
-                                          'FILEGDB_WORKSPACE',
-                                          data_set)
-
-            elif lyr.name.endswith('local_places'):
-                data_set = 'npc_bqarp_2016_{0}_local_places'.format(stcou)
-                print(os.path.join(arcpy.env.workspace, data_set))
-                if arcpy.Exists(data_set):
-                    lyr.replaceDataSource(arcpy.env.workspace,
-                                          'FILEGDB_WORKSPACE',
-                                          data_set)
-
-            elif lyr.name.endswith('discrepancies_places'):
-                data_set = 'npc_bqarp_2016_{0}_places_discrepancies'.format(stcou)
-                print(os.path.join(arcpy.env.workspace, data_set))
-                if arcpy.Exists(data_set):
-                    lyr.replaceDataSource(arcpy.env.workspace,
-                                          'FILEGDB_WORKSPACE',
-                                          data_set)
+                if lyr.name.endswith('census_places'):
+                    if lyr.symbologyType == 'UNIQUE_VALUES':
+                        lyr.symbology.valueField = 'NAME'
+                        lyr.symbology.addAllValues()
 
     print('\nBroken links in new mxd:')
     broken_list = arcpy.mapping.ListBrokenDataSources(mxd)
@@ -158,7 +72,7 @@ def format_processing_mxd(current_mxd_path, new_gdb):
     # change this before giving it to maddie
     bqarp = r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP'
     st = stcou[0:2]
-    new_mxd_path = os.path.join(bqarp, st, stcou, '{0}_processing.mxd'.format(stcou))
+    new_mxd_path = os.path.join(bqarp, st, stcou, '{0}_processing.mxd'.format(tail[:-4]))
     mxd.saveACopy(new_mxd_path)
 
     del mxd

@@ -10,7 +10,7 @@ THIS IS A TOOL FOR ARCMAP AND WILL NOT WORK ON ITS OWN IN PYTHON WITHOUT MODIFIC
 
 
 This tool takes in a list of features to be merged together and lets the user define the field
-used by the submitter to store county and/or county names. It then performs a spatial join and
+used by the submitter to store feature names. It then performs a spatial join and
 selection to figure out where mismatches are.
 """
 
@@ -55,15 +55,16 @@ def find_files(search_folder, *search_string):
 
 arcpy.env.overwriteOutput = True
 
-input_features = arcpy.GetParameterAsText(0)  # list of counties to merge together
-put_them_here = arcpy.GetParameterAsText(1)  # this should be your local data folder or other similar raw data folder
-local_name_field = arcpy.GetParameterAsText(2)  # the name field in the local data to perform the matching on
-local_fips_field = arcpy.GetParameterAsText(3)  # the FIPs code field in the local data to perform the matching on
-st = arcpy.GetParameterAsText(4)  # the state code, cause its easier to just ask for it here
-census_counties_shp = arcpy.GetParameterAsText(5)  # LISRDS file for corresponding census counties
+geography = arcpy.GetParameterAsText(0)
+input_features = arcpy.GetParameterAsText(1)  # list of features to merge together
+put_them_here = arcpy.GetParameterAsText(2)  # this should be your local data folder or other similar raw data folder
+local_name_field = arcpy.GetParameterAsText(3)  # the name field in the local data to perform the matching on
+local_fips_field = arcpy.GetParameterAsText(4)  # the FIPs code field in the local data to perform the matching on
+st = arcpy.GetParameterAsText(5)  # the state code, cause its easier to just ask for it here
+census_geography_shp = arcpy.GetParameterAsText(6)  # LISRDS file for corresponding census geography
 
-discrepancy_file_multipart = "in_memory\\counties_select_MultipartToSin"
-discrepancy_file_select = "in_memory\\counties_select_area"
+discrepancy_file_multipart = "in_memory\\places_select_MultipartToSin"
+discrepancy_file_select = "in_memory\\places_select_area"
 
 logging.basicConfig(filename=os.path.join(put_them_here, 'assessment_log.txt'), level=logging.DEBUG, format='%(message)s', filemode='w')
 logger = logging.getLogger()
@@ -71,57 +72,48 @@ logger.info(make_header('  Processing files for {}  '.format(st)))
 
 these_features = [feature for feature in input_features.split(';')]
 
-merged_counties_folder = os.path.join(put_them_here, 'counties')
-if not os.path.exists(merged_counties_folder):
+merged_geo_folder = os.path.join(put_them_here, geography)
+if not os.path.exists(merged_geo_folder):
     arcpy.AddMessage('Making output folder....')
-    os.mkdir(merged_counties_folder)
+    os.mkdir(merged_geo_folder)
 
-projected_counties = os.path.join(merged_counties_folder, 'projected_local')
-if not os.path.exists(projected_counties):
-    os.mkdir(projected_counties)
+merged_geos = os.path.join(merged_geo_folder, 'local_{0}_merge_{1}.shp'.format(geography, st))
 
-merged_counties = os.path.join(merged_counties_folder, 'local_counties_merge_{0}.shp'.format(st))
-
-targetDescribe = arcpy.Describe(census_counties_shp)
-projection = targetDescribe.SpatialReference
-arcpy.AddMessage('Projecting features....')
-for shp in these_features:
-    head, tail = os.path.split(shp)
-    output_name = os.path.join(projected_counties, '{0}_projected.shp'.format(tail[:-4]))
-    arcpy.Project_management(shp, output_name, projection)
-
-merge_these_features = []
 arcpy.AddMessage('Merging features into one file....')
-projected_features = list(find_files(projected_counties, '.shp'))
-for f in projected_features:
-    merge_these_features.append(os.path.join(projected_counties, f))
-arcpy.Merge_management(merge_these_features, merged_counties)
+logging.info('Merging the flowing:')
+for shp in these_features:
+    logging.info(shp)
+arcpy.Merge_management(these_features, merged_geos)
 
-local_census_join_shp = os.path.join(merged_counties_folder, 'counties_join_{0}.shp'.format(st))
+census_name = 'NAME'
+fields = arcpy.ListFields(merged_geos)
+for field in fields:
+    if field.name == 'NAME':
+        census_name = 'NAME_1'
+    else:
+        continue
 
-# Process: Spatial Join - turn this into a union?
+local_census_join_shp = os.path.join(merged_geo_folder, '{0}_join_{1}.shp'.format(geography, st))
+
+# Process: union
 arcpy.AddMessage('Beginning comparison of census data and local data....')
-arcpy.Union_analysis([merged_counties,
-                     census_counties_shp],
+arcpy.Union_analysis([merged_geos,
+                     census_geography_shp],
                      local_census_join_shp,
                      "ALL",
                      "",
                      "GAPS")
 
 # Process: Add Field
-arcpy.AddField_management(local_census_join_shp,
-                          'FIPS_MATCH',
-                          'TEXT')
+arcpy.AddField_management(local_census_join_shp, 'FIPS_MATCH', 'TEXT')
 arcpy.AddMessage('FIPS_MATCH field added....')
 
 # Process: Add Field (2)
-arcpy.AddField_management(local_census_join_shp,
-                          'NAME_MATCH',
-                          'TEXT')
+arcpy.AddField_management(local_census_join_shp, 'NAME_MATCH', 'TEXT')
 arcpy.AddMessage('NAME_MATCH field added....')
 
 fips_fields = ['{0}'.format(local_fips_field), 'COUNTYFP', 'FIPS_MATCH']
-name_fields = ['{0}'.format(local_name_field), 'NAME', 'NAME_MATCH']
+name_fields = ['{0}'.format(local_name_field), '{0}'.format(census_name), 'NAME_MATCH']
 
 # Process: Make Feature Layer
 arcpy.MakeFeatureLayer_management(local_census_join_shp, 'local_census_lyr')
@@ -130,19 +122,31 @@ if local_fips_field != "":
     fips_mismatch = 0
     with arcpy.da.UpdateCursor('local_census_lyr', fips_fields) as cursor:
         for row in cursor:
-            if str(row[0]) == str(row[1]):
-                row[2] = 'Y'
+            fips_length = len(str(row[0]))
+            if fips_length == 3:
+                if str(row[0]) == str(row[1]):
+                    row[2] = 'Y'
+                else:
+                    row[2] = 'N'
+                    fips_mismatch += 1
+                cursor.updateRow(row)
+            elif fips_length == 5:
+                if str(row[0][2:]) == str(row[1]):
+                    row[2] = 'Y'
+                else:
+                    row[2] = 'N'
+                    fips_mismatch += 1
+                cursor.updateRow(row)
             else:
                 row[2] = 'N'
                 fips_mismatch += 1
-            cursor.updateRow(row)
     logging.warning('{0} FIPS records did not match'.format(fips_mismatch))
 
 if local_name_field != "":
     name_mismatch = 0
     with arcpy.da.UpdateCursor('local_census_lyr', name_fields) as cursor:
         for row in cursor:
-            if str(row[0]) == str(row[1]):
+            if str(row[0]).upper() == str(row[1]).upper():
                 row[2] = 'Y'
             else:
                 row[2] = 'N'
@@ -150,17 +154,38 @@ if local_name_field != "":
             cursor.updateRow(row)
     logger.warning('{0} Name records did not match'.format(name_mismatch))
 
+discrepancy_file = os.path.join(merged_geo_folder, 'bqarp_{0}_discrepancies.shp'.format(geography))
 
-logging.info('Union output file located at {0}'.format(local_census_join_shp))
-arcpy.AddMessage('Adding processing attribute fields...')
+name_fields_expression = """UPPER({0}) <> UPPER({1})""".format(census_name.upper(), local_name_field.upper())
+arcpy.Select_analysis(local_census_join_shp, discrepancy_file_select, name_fields_expression)
+arcpy.MultipartToSinglepart_management(discrepancy_file_select, discrepancy_file_multipart)
 
-discrepancy_file = os.path.join(merged_counties_folder, 'npc_bqarp_2016_{0}_counties_discrepancies.shp'.format(st))
-arcpy.SymDiff_analysis(merged_counties, census_counties_shp, discrepancy_file_multipart)
-arcpy.MultipartToSinglepart_management(discrepancy_file_multipart, discrepancy_file_select)
+temporary_output_file = os.path.join(merged_geo_folder, 'temp_file.shp')
+arcpy.Project_management(discrepancy_file_multipart,
+                         temporary_output_file,
+                         "PROJCS['North_America_Albers_Equal_Area_Conic',"
+                         "GEOGCS['GCS_North_American_1983',"
+                         "DATUM['D_North_American_1983',"
+                         "SPHEROID['GRS_1980',6378137.0,298.257222101]],"
+                         "PRIMEM['Greenwich',0.0],"
+                         "UNIT['Degree',0.0174532925199433]],"
+                         "PROJECTION['Albers'],"
+                         "PARAMETER['False_Easting',0.0],PARAMETER['False_Northing',0.0],"
+                         "PARAMETER['Central_Meridian',-96.0],"
+                         "PARAMETER['Standard_Parallel_1',20.0],"
+                         "PARAMETER['Standard_Parallel_2',60.0],"
+                         "PARAMETER['Latitude_Of_Origin',40.0],"
+                         "UNIT['Meter',1.0]]",
+                         "",
+                         "",
+                         "NO_PRESERVE_SHAPE",
+                         "")
 
 # Process: Calculate Areas
-arcpy.CalculateAreas_stats(discrepancy_file_select, discrepancy_file)
+arcpy.CalculateAreas_stats(temporary_output_file, discrepancy_file)
+arcpy.Delete_management(temporary_output_file)
 
+arcpy.AddMessage('Adding processing attribute fields...')
 # creating QC fields
 arcpy.AddField_management(discrepancy_file, "FEEDBACK", "TEXT", "", "", "3", "", "NULLABLE", "NON_REQUIRED", "")
 arcpy.AddField_management(discrepancy_file, "COMMENTS", "TEXT", "", "", "100", "", "NULLABLE", "NON_REQUIRED", "")
@@ -173,6 +198,7 @@ arcpy.AddField_management(discrepancy_file, "DIGITIZE", "TEXT", "", "", "1", "",
 arcpy.AddField_management(discrepancy_file, "D_COMMENTS", "TEXT", "", "", "100", "", "NULLABLE", "NON_REQUIRED", "")
 arcpy.AddField_management(discrepancy_file, "DIG_QA", "TEXT", "", "", "1", "", "NULLABLE", "NON_REQUIRED", "")
 arcpy.AddField_management(discrepancy_file, "Q_COMMENTS", "TEXT", "", "", "100", "", "NULLABLE", "NON_REQUIRED", "")
-arcpy.DeleteField_management(discrepancy_file, "NAME_1")
-arcpy.AddMessage('Assessment complete!')
 logging.info('Discrepancy output file located at {0}'.format(discrepancy_file))
+
+logging.info('Union output file located at {0}'.format(local_census_join_shp))
+arcpy.AddMessage('Assessment complete!')
