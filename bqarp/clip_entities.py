@@ -75,51 +75,57 @@ def clip_county_by_selection(joined_county_file, local_file, output_folder, type
     field_names = ['STATEFP', 'COUNTYFP']
     logging.info('Number of records selected for each county')
     with arcpy.da.SearchCursor('joined_counties_lyr', field_names) as cursor:
+        previous_row = ''
         for row in cursor:
-            # create the full county code and sql statement
-            county_fp = '{0}{1}'.format(row[0], row[1])
-            expression = """"COUNTYFP" = '{0}'""".format(row[1])
-            # select each county from the joined counties and set outputs folder
-            arcpy.SelectLayerByAttribute_management('joined_counties_lyr',
-                                                    "NEW_SELECTION",
-                                                    expression)
+            if row[1] == previous_row:
+                pass
+            else:
+                # create the full county code and sql statement
+                county_fp = '{0}{1}'.format(row[0], row[1])
+                expression = """"COUNTYFP" = '{0}'""".format(row[1])
+                arcpy.AddMessage('Processing {0}'.format(county_fp))
 
-            # select the places inside the selection
-            arcpy.SelectLayerByLocation_management('local_places_lyr',
-                                                   "WITHIN",
-                                                   'joined_counties_lyr',
-                                                   "",
-                                                   "NEW_SELECTION",
-                                                   "NOT_INVERT")
+                arcpy.SelectLayerByAttribute_management('joined_counties_lyr',
+                                                        "NEW_SELECTION",
+                                                        expression)
 
-            select_length = int(arcpy.GetCount_management('local_places_lyr').getOutput(0))
-            logging.info('{0}: {1}'.format(county_fp, select_length))
+                # select the places inside the selection
+                arcpy.SelectLayerByLocation_management('local_places_lyr',
+                                                       "HAVE_THEIR_CENTER_IN",
+                                                       'joined_counties_lyr',
+                                                       "",
+                                                       "NEW_SELECTION",
+                                                       "NOT_INVERT")
 
-            if select_length > 0:
-                clip_name = 'npc_bqarp_2016_{0}_{1}.shp'.format(county_fp, type_submission)
+                select_length = int(arcpy.GetCount_management('local_places_lyr').getOutput(0))
+                logging.info('{0}: {1}'.format(county_fp, select_length))
                 output_path = os.path.join(output_folder, county_fp)
 
-                # make the output folder if it's not already there
-                if not os.path.exists(os.path.join(output_folder, county_fp)):
-                    os.mkdir(os.path.join(output_folder, county_fp))
+                if select_length > 0:
+                    clip_name = 'bqarp_{0}.shp'.format(type_submission)
 
-                arcpy.FeatureClassToFeatureClass_conversion('local_places_lyr',
-                                                            output_path,
-                                                            clip_name)
-                arcpy.AddMessage('Completed clipping: {0}'.format(county_fp))
+                    # make the output folder if it's not already there
+                    if not os.path.exists(os.path.join(output_folder, county_fp)):
+                        os.mkdir(os.path.join(output_folder, county_fp))
 
-            elif select_length == 0:
-                arcpy.AddMessage('{0} contains no features'.format(county_fp))
+                    arcpy.FeatureClassToFeatureClass_conversion('local_places_lyr',
+                                                                output_path,
+                                                                clip_name)
+                    arcpy.AddMessage('Completed clipping: {0}'.format(county_fp))
 
-            else:
-                arcpy.AddMessage('{0} is malfunctioning'.format(county_fp))
+                elif select_length == 0:
+                    arcpy.AddMessage('{0} contains no features'.format(county_fp))
 
-            if type_submission == 'local_county' or type_submission == 'local_places':
-                head, geography = type_submission.split('_')
-                txt = os.path.join(output_path, '{0}_{1}.txt'.format(county_fp, geography))
-                if not os.path.exists(txt):
-                    txt_file = open(txt)
-                    txt_file.close()
+                else:
+                    arcpy.AddMessage('{0} is malfunctioning'.format(county_fp))
+
+                if type_submission == 'local_county' or type_submission == 'local_places':
+                    head, geography = type_submission.split('_')
+                    txt = os.path.join(output_path, '{0}_{1}.txt'.format(county_fp, geography))
+                    if not os.path.exists(txt):
+                        txt_file = open(txt, 'wt')
+                        txt_file.close()
+                previous_row = row[1]
 
     logging.info('Completed splitting places')
 
@@ -130,57 +136,27 @@ if __name__ == "__main__":
     census_file = arcpy.GetParameterAsText(3)
     subtype = arcpy.GetParameterAsText(4)
 
+    arcpy.env.overwriteOutput = True
+
     logging.basicConfig(filename=os.path.join(output, 'log.txt'), level=logging.DEBUG, format='%(message)s')
     logger = logging.getLogger()
     logger.info('\n')
     logger.info(make_header('Dividing local data into county folders'))
 
-    arcpy.AddMessage('Beginning preprocesing to clip features....')
-
-    # project data
-    projected_counties = os.path.join(output, 'projected_local')
-    if not os.path.exists(projected_counties):
-        os.mkdir(projected_counties)
-
-    # this should probs be a function
-    targetDescribe = arcpy.Describe(census_file)
-    targetSR = targetDescribe.SpatialReference
-
-    arcpy.AddMessage('Projecting features....')
-    head, tail = os.path.split(counties)
-    cou_output = os.path.join(projected_counties, 'local_counties_projected.shp')
-    arcpy.Project_management(counties, cou_output, targetSR)
-
-    head, tail = os.path.split(places)
-    pl_output = os.path.join(projected_counties, 'local_places_projected.shp')
-    arcpy.Project_management(places, pl_output, targetSR)
+    arcpy.AddMessage('Beginning preprocessing to clip features....')
 
     # spatial join of local counties and census counties
     arcpy.AddMessage('Transferring census information to local information')
-    clip_to_these = os.path.join(projected_counties, 'local_joined.shp')
+    clip_to_these = os.path.join('in_memory', 'local_joined')
     arcpy.SpatialJoin_analysis(census_file,
-                               cou_output,
+                               counties,
                                clip_to_these,
-                               'JOIN_ONE_TO_ONE',
+                               'JOIN_ONE_TO_MANY',
                                'KEEP_ALL',
                                "",
                                'INTERSECT')
 
     arcpy.AddMessage('Clipping features....')
     clip_county_by_selection(clip_to_these, places, output, subtype)
-
-    arcpy.AddMessage('Deleting intermediate files....')
-    try:
-        remove_files = find_files(projected_counties)
-        for rf in remove_files:
-            if rf.endswith('.shp'):
-                arcpy.Delete_management(os.path.join(projected_counties, rf))
-    finally:
-        remove_again = find_files(projected_counties)
-        for ra in remove_again:
-            print ra
-            os.remove(os.path.join(projected_counties, ra))
-
-    os.rmdir(projected_counties)
 
     arcpy.AddMessage('Clipping complete')

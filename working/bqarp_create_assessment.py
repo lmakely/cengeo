@@ -8,7 +8,7 @@ import winsound
 
 swim = r'\\batch4.ditd.census.gov\mtdata003_geo_SWIM\BQARP\2016'  # this will need to get changed from year to year
 lisrds = r''
-working_dir = r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP'
+working_dir = r'H:\!!!HDriveStuff\BQARP'  # r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP'
 template_mxd = r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP\Tools\Assessment.mxd'
 
 
