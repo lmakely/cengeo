@@ -29,6 +29,21 @@ def make_header(my_string, char='*'):
     return output
 
 
+def find_files(search_folder, *search_string):
+    """
+    Generates a list of files that matches the search criteria.
+
+    :param search_folder:   folder to search within
+    :param search_string:   filetype to look for
+    :return:                path for the files  that contain the search string
+    """
+    for f in os.listdir(search_folder):
+        # if the extension for a file is '.zip' it gets produced
+        for ext in search_string:
+            if f.endswith(ext):
+                yield f
+
+
 def format_processing_mxd(current_mxd_path, new_gdb):
     """
     This function replaces the workspace for an mxd with a new gdb. Then it saves the mxd as a new map document.
@@ -77,10 +92,11 @@ def format_processing_mxd(current_mxd_path, new_gdb):
 
     del mxd
 
+
 def format_qa_mxd(current_mxd_path, new_gdb, new_mxd_path):
     print('stuff')
 
 if __name__ == "__main__":
     template = r'\\batch4.ditd.census.gov\mtdata003_geoarea\BAS\CARP\BQARP\Tools\preprocess_template.mxd'
-    stcou_gdb = arcpy.GetParameterAsText(0)  # r'H:\!!!HDriveStuff\BQARP\20\20005\bqarp_20005.gdb'
-    format_processing_mxd(template, stcou_gdb)
+    st_folder = arcpy.GetParameterAsText(0)
+    format_processing_mxd(template, st_folder)

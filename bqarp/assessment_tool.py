@@ -10,8 +10,9 @@ THIS IS A TOOL FOR ARCMAP AND WILL NOT WORK ON ITS OWN IN PYTHON WITHOUT MODIFIC
 
 
 This tool takes in a list of features to be merged together and lets the user define the field
-used by the submitter to store feature names. It then performs a spatial join and
-selection to figure out where mismatches are.
+used by the submitter to store feature names. It then performs a union and selection to
+figure out where discrepancies are.
+
 """
 
 
@@ -63,54 +64,66 @@ local_fips_field = arcpy.GetParameterAsText(4)  # the FIPs code field in the loc
 st = arcpy.GetParameterAsText(5)  # the state code, cause its easier to just ask for it here
 census_geography_shp = arcpy.GetParameterAsText(6)  # LISRDS file for corresponding census geography
 
-discrepancy_file_multipart = "in_memory\\places_select_MultipartToSin"
-discrepancy_file_select = "in_memory\\places_select_area"
-
-logging.basicConfig(filename=os.path.join(put_them_here, 'assessment_log.txt'), level=logging.DEBUG, format='%(message)s', filemode='w')
+# Setting up the output log file
+logging.basicConfig(filename=os.path.join(put_them_here, 'assessment_log.txt'),
+                    level=logging.DEBUG,
+                    format='%(message)s',
+                    filemode='w')
 logger = logging.getLogger()
 logger.info(make_header('  Processing files for {}  '.format(st)))
 
-these_features = [feature for feature in input_features.split(';')]
-
+# Where the files will end up (divides them into the different geography types, e.g. places, counties, school districts)
 merged_geo_folder = os.path.join(put_them_here, geography)
+
+# Checks that the output folder exists and if not, makes it
 if not os.path.exists(merged_geo_folder):
     arcpy.AddMessage('Making output folder....')
     os.mkdir(merged_geo_folder)
 
+# Defining the output shp name for the merged local features
 merged_geos = os.path.join(merged_geo_folder, 'local_{0}_merge_{1}.shp'.format(geography, st))
+# Output path for union
+local_census_join_shp = os.path.join(merged_geo_folder, '{0}_union_{1}.shp'.format(geography, st))
+# Temporary files used later on to format the discrepancy polygon
+discrepancy_file_multipart = "in_memory\\places_select_MultipartToSin"
+discrepancy_file_select = "in_memory\\places_select_area"
+# Creates a list of the input shapefiles from above (arc stores them differently that python will interpret them)
+these_features = [feature for feature in input_features.split(';')]
 
+# Adds message to arc window
 arcpy.AddMessage('Merging features into one file....')
+# Adds message to the log file that describes all the files being merged
 logging.info('Merging the flowing:')
 for shp in these_features:
     logging.info(shp)
+# Merging the files together
 arcpy.Merge_management(these_features, merged_geos)
 
+# Many local files store their place names in a field called NAME just like we do. This bit here makes sure the later
+# comparisons are performed on the correct census NAME field. If manipulating names to remove or add extra information,
+# please modify a copy of their data. This script does not care about casing so modifications to that are unnecessary.
 census_name = 'NAME'
 fields = arcpy.ListFields(merged_geos)
+i = 1
 for field in fields:
     if field.name == 'NAME':
         census_name = 'NAME_1'
+    elif field.name == 'NAME_{0}'.format(i):
+        i += 1
+        census_name = 'NAME_{0}'.format(i)
     else:
         continue
 
-local_census_join_shp = os.path.join(merged_geo_folder, '{0}_join_{1}.shp'.format(geography, st))
-
-# Process: union
+# Status update to arc window
 arcpy.AddMessage('Beginning comparison of census data and local data....')
+
+# Process: Union
 arcpy.Union_analysis([merged_geos,
                      census_geography_shp],
                      local_census_join_shp,
                      "ALL",
                      "",
                      "GAPS")
-
-# Process: Add Field
-arcpy.AddField_management(local_census_join_shp, 'FIPS_MATCH', 'TEXT')
-arcpy.AddMessage('FIPS_MATCH field added....')
-
-# Process: Add Field (2)
-arcpy.AddField_management(local_census_join_shp, 'NAME_MATCH', 'TEXT')
-arcpy.AddMessage('NAME_MATCH field added....')
 
 fips_fields = ['{0}'.format(local_fips_field), 'COUNTYFP', 'FIPS_MATCH']
 name_fields = ['{0}'.format(local_name_field), '{0}'.format(census_name), 'NAME_MATCH']
@@ -119,6 +132,11 @@ name_fields = ['{0}'.format(local_name_field), '{0}'.format(census_name), 'NAME_
 arcpy.MakeFeatureLayer_management(local_census_join_shp, 'local_census_lyr')
 
 if local_fips_field != "":
+    # Process: Add Field
+    arcpy.AddField_management(local_census_join_shp, 'FIPS_MATCH', 'TEXT')
+    # Status update to arc window
+    arcpy.AddMessage('FIPS_MATCH field added....')
+
     fips_mismatch = 0
     with arcpy.da.UpdateCursor('local_census_lyr', fips_fields) as cursor:
         for row in cursor:
@@ -143,6 +161,10 @@ if local_fips_field != "":
     logging.warning('{0} FIPS records did not match'.format(fips_mismatch))
 
 if local_name_field != "":
+    # Process: Add Field (2)
+    arcpy.AddField_management(local_census_join_shp, 'NAME_MATCH', 'TEXT')
+    # Status update to arc window
+    arcpy.AddMessage('NAME_MATCH field added....')
     name_mismatch = 0
     with arcpy.da.UpdateCursor('local_census_lyr', name_fields) as cursor:
         for row in cursor:
