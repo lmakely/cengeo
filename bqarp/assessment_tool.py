@@ -55,7 +55,7 @@ def find_files(search_folder, *search_string):
 
 arcpy.env.overwriteOutput = True
 
-geography = arcpy.GetParameterAsText(0)
+geography = arcpy.GetParameterAsText(0)  #string that names the output folder
 input_features = arcpy.GetParameterAsText(1)  # list of features to merge together
 put_them_here = arcpy.GetParameterAsText(2)  # this should be your local data folder or other similar raw data folder
 local_name_field = arcpy.GetParameterAsText(3)  # the name field in the local data to perform the matching on
