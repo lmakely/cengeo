@@ -91,7 +91,7 @@ def clip_county_by_selection(joined_county_file, local_file, output_folder, type
 
                 # select the places inside the selection
                 arcpy.SelectLayerByLocation_management('local_places_lyr',
-                                                       "HAVE_THEIR_CENTER_IN",
+                                                       "INTERSECT",
                                                        'joined_counties_lyr',
                                                        "",
                                                        "NEW_SELECTION",
