@@ -1,4 +1,5 @@
-__author__ = 'Lauren Makely'
+__author__ = 'Lauren Ely'
+
 
 import arcpy
 import core
@@ -53,3 +54,24 @@ def create_and_setup_mxd(template_mxd, where_to_save_mxd, directory_of_features)
     output_mxd = os.path.join(where_to_save_mxd, 'BQARP_Assessment.mxd')
     logger.info('Saving mxd to {}'.format(output_mxd))
     mxd.saveACopy(output_mxd)
+
+
+def list_data_sources(path_to_mxd):
+    """
+    Use this function to see if the file paths used in an mxd are:
+        1) from the correct source
+        2) broken or not
+
+    :param path_to_mxd: path to an mxd that you want to inspect
+    :return:
+    """
+    mxd = arcpy.mapping.MapDocument(path_to_mxd)
+
+    lyr_list = arcpy.mapping.ListLayers(mxd)
+
+    for lyr in lyr_list:
+        if lyr.isBroken:
+            link_broken = 'Yes'
+        else:
+            link_broken = 'No'
+        print('Layer: {0}\n\tPath: {1}\n\tBroken: {2}'.format(lyr.name, lyr.dataSource, link_broken))

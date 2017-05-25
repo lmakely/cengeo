@@ -7,7 +7,7 @@ __author__ = ['Patrick Jurgens',
 from bench_county_merge import *
 from cannot_id_changes import *
 from dicts import *
-from get_counties import *
+from get_info import *
 from get_form_dbf import *
 from import_support import *
 from log_it import *
