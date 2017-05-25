@@ -7,5 +7,4 @@ working/preprocessBAS20XX.py
 working/preprocessBAS20XX_FixID.py
 working/preprocessBAS20XX_LocalSub.py
 bqarp/bqarp_pre_process_sudo.py
-*.pyc
 working
